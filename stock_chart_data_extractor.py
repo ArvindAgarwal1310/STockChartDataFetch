@@ -30,7 +30,7 @@ style.configure("Treeview.Cell", font=("Times New Roman", 20,"bold)"))
 
 
 
-def display_image(fp,img_label):
+def display_image(fp,img_label): #Image is displayed on the Label
     if img_label.image:
         img_label.image = None
     image = Image.open(fp)
@@ -44,7 +44,7 @@ def display_image(fp,img_label):
 
 
 
-# Function to open a file dialog and load an image
+# Function to open a file dialog and load an image, send it to value_extraction to preprocess and extract data.
 def open_image():
     file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png *.gif *.bmp *.ppm *.pgm")])
     if file_path:
@@ -59,14 +59,14 @@ def open_image():
         img_label.image = photo
         display_image("predicted_values_image.jpg",img_label)
 
+#clears the pre existing data in the table.
 def clear_table():
     for item in table.get_children():
         table.delete(item)
 
 
 def add_values(ans_list):
-
-    # Check if both name and age are provided
+    # Check if both price and parameter are provided
     if ans_list[0] and ans_list[1]:
         if (len(ans_list)==2):
             ans_list.append("unknown")
@@ -86,15 +86,11 @@ def createApp():
     # Create a button to open an image file with custom styling
     open_button = tk.Button(app, text="Select Image", command=open_image, font=custom_font, bg='#007ACC', fg='white')
     open_button.pack(pady=5)
-
     img_label.pack(pady=10)
-
     table.pack()
-
     app.mainloop()
 
-
-
+#function to check if extracted string is a floating number
 def isfloat(num):
     try:
         float(num)
@@ -102,14 +98,17 @@ def isfloat(num):
     except ValueError:
         return False
 
+#important function to preprocess and extract data from image
 def value_extraction(filepath):
     image = cv2.imread(filepath)
     BWimage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     h,w,_=image.shape
 
-    myconfig=r"--psm 11 --oem 3"
+    #Page segmentation mode and Engine mode
+    myconfig=r"--psm 11 --oem 3" 
     '''
+    #this section return individual characters, instead of string.
     boxes=pytesseract.image_to_boxes(image,config=myconfig)
     
     for box in boxes.splitlines():
@@ -134,7 +133,7 @@ def value_extraction(filepath):
                 for j in range(amount_boxes):
                     if(x_axis==1 and y_axis==1):
                         break
-                    for k in range(20,100,10):
+                    for k in range(20,100,10): #checking for the closest value in the price axis
                         if(y_axis==1):
                             break
                         if (x+40<data["left"][j])and (y>=data["top"][j]-k and y<=data["top"][j]+(k/5)) :
@@ -143,7 +142,7 @@ def value_extraction(filepath):
                                 answers.append((data['text'][j]))
                                 y_axis=1
                                 break
-                    for k in range(20,100,10):
+                    for k in range(20,100,10): #checking for the closest value in the time axis
                         if(x_axis==1):
                             break
                         if (y<data["top"][j])and (x>=data["left"][j]-k and x<=data["left"][j]+k) :
@@ -154,10 +153,11 @@ def value_extraction(filepath):
                                 break
                 if(len(answers)>=2):
                     add_values(answers)
-            image=cv2.rectangle(image,(x,y),(x+width,y+height),(0,255,0),1)
+            image=cv2.rectangle(image,(x,y),(x+width,y+height),(0,255,0),1)  #boxes are created alongside detected text
             image=cv2.putText(image, data['text'][i], (x+width-35,y+height+20),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,0),2,cv2.LINE_AA)
 
     cv2.imwrite("predicted_values_image.jpg",image)
+    #image is saved on the system, for further use and cross-check.
 
 if __name__ == "__main__":
     createApp()
